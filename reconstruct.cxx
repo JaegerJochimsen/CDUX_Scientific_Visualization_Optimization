@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <vector>
 #include <chrono>
-#include <omp.h>
 #include <iterator> // for vector find
 #include <unistd.h> // for strtok
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <pthread.h>
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Triangulation_vertex_base_with_info_3.h>
@@ -36,8 +36,6 @@ typedef Triangulation::Cell_handle Cell_handle;
 typedef Triangulation::Vertex_handle Vertex_handle;
 typedef Triangulation::Point Vertex;
 
-// spawn 8 threads to do 1/8th of the work each
-#define THREADPOOL 8
 #define SUBSET 5000
 #define OFFSET 0.001
 #define W 2.5
@@ -50,35 +48,11 @@ typedef Triangulation::Point Vertex;
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
-typedef struct thread_args{
-    std::vector<Vertex> starts;
-    std::vector<Vertex> query;
-    std::vector<double> construct_times;
-    std::vector<double> interp_times;
-    std::vector<double> location_times;
-} targs;
-
-// -------------------------------------------------------------------//
-// -------------------------------------------------------------------//
 
 int vectorIndex(std::vector<Vertex> v, Vertex p){
     std::vector<Vertex>::iterator itr = std::find(v.begin(), v.end(), p);
     return std::distance(v.begin(), itr);
 } 
-
-// -------------------------------------------------------------------//
-// -------------------------------------------------------------------//
-
-void *subdomain_routine(void *args){
-    targs *t = (targs *)args; 
-
-    Triangulation triang;
-    if((t->query.size() == 0) || (t->starts.size() < 4))
-        pthread_exit(NULL);
-
-    triang.insert(t->starts.begin(), t->starts.end());
-    
-}
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
@@ -373,7 +347,7 @@ int main(int argc, char *argv[]){
     //       accuracy testing
     // ---------------------------------------------------------------//
     vtkDataSetReader *inputRdr = vtkDataSetReader::New();
-    inputRdr->SetFileName("Groundtruth.vtk");
+    inputRdr->SetFileName("Groundtruth_0_0.vtk");
     inputRdr->Update();
 
     int numBasisPts = inputRdr->GetOutput()->GetNumberOfPoints();
@@ -872,42 +846,42 @@ int main(int argc, char *argv[]){
     // ---------------------------------------------------------------//
     // Start Write Data 
     // ---------------------------------------------------------------//
-    std::string mode;
-    if(doLocal) mode = "Local";
-    if(doNeighbor) mode = "Neighbor";
-    if(doGlobal) mode = "Global";
+//    std::string mode;
+//    if(doLocal) mode = "Local";
+//    if(doNeighbor) mode = "Neighbor";
+//    if(doGlobal) mode = "Global";
 
-    std::string triString = "TriangulationConstruction_";
-    triString += mode;
-    std::ofstream triangFile(triString.c_str());
+    //std::string triString = "TriangulationConstruction_";
+    //triString += mode;
+    //std::ofstream triangFile(triString.c_str());
 
-    std::string locateString = "Location_";
-    locateString += mode;
-    std::ofstream locateFile(locateString.c_str());
+    //std::string locateString = "Location_";
+    //locateString += mode;
+    //std::ofstream locateFile(locateString.c_str());
 
-    std::string interpString = "Interp_"; 
-    interpString += mode;
-    std::ofstream interpFile(interpString.c_str());
+    //std::string interpString = "Interp_"; 
+    //interpString += mode;
+    //std::ofstream interpFile(interpString.c_str());
 
-    std::string errorString = "Error_"; 
-    errorString += mode;
-    std::ofstream errorFile(errorString.c_str());
+    //std::string errorString = "Error_"; 
+    //errorString += mode;
+    //std::ofstream errorFile(errorString.c_str());
    
-    for(int i = 0; i < tri_times.size(); ++i){
-        triangFile << tri_times[i] << "\n";
-    }
+    //for(int i = 0; i < tri_times.size(); ++i){
+    //    triangFile << tri_times[i] << "\n";
+    //}
 
-    for(int i = 0; i < locate_times.size(); ++i){
-        locateFile << locate_times[i] << "\n";
-    }
+    //for(int i = 0; i < locate_times.size(); ++i){
+    //    locateFile << locate_times[i] << "\n";
+    //}
 
-    for(int i = 0; i < interp_times.size(); ++i){
-        interpFile << interp_times[i] << "\n";
-    }
+    //for(int i = 0; i < interp_times.size(); ++i){
+    //    interpFile << interp_times[i] << "\n";
+    //}
 
-    for(int i = 0; i < errors.size(); ++i){
-        errorFile << errors[i] << "\n";
-    }
+    //for(int i = 0; i < errors.size(); ++i){
+    //    errorFile << errors[i] << "\n";
+    //}
 
     // clean up vtk memory
     inputRdr->Delete();

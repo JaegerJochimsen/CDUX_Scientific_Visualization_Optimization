@@ -1,5 +1,5 @@
 import random
-with open("Groundtruth.vtk", 'w') as f:
+with open("Groundtruth_0_0.vtk", 'w') as f:
     f.write('# vtk DataFile Version 3.0\n')
     f.write('vtk output\n')
     f.write('ASCII\n')
