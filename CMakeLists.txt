@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1...3.15)
 
 project( reconstruct )
 set(CMAKE_CXX_LINK_FLAGS "-lGL")
-set(CMAKE_CXX_FLAGS, "-g -fopenmp -Ofast")
+set(CMAKE_CXX_FLAGS, "-g -pthread -Ofast")
 set(CMAKE_BUILD_TYPE "Release")
 
 # SET YOUR VTK and CGAL directory here!!
