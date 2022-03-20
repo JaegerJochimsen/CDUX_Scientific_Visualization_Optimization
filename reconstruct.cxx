@@ -36,6 +36,8 @@ typedef Triangulation::Cell_handle Cell_handle;
 typedef Triangulation::Vertex_handle Vertex_handle;
 typedef Triangulation::Point Vertex;
 
+// spawn 8 threads to do 1/8th of the work each
+#define THREADPOOL 8
 #define SUBSET 5000
 #define OFFSET 0.001
 #define W 2.5
@@ -48,11 +50,35 @@ typedef Triangulation::Point Vertex;
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
+typedef struct thread_args{
+    std::vector<Vertex> starts;
+    std::vector<Vertex> query;
+    std::vector<double> construct_times;
+    std::vector<double> interp_times;
+    std::vector<double> location_times;
+} targs;
+
+// -------------------------------------------------------------------//
+// -------------------------------------------------------------------//
 
 int vectorIndex(std::vector<Vertex> v, Vertex p){
     std::vector<Vertex>::iterator itr = std::find(v.begin(), v.end(), p);
     return std::distance(v.begin(), itr);
 } 
+
+// -------------------------------------------------------------------//
+// -------------------------------------------------------------------//
+
+void *subdomain_routine(void *args){
+    targs *t = (targs *)args; 
+
+    Triangulation triang;
+    if((t->query.size() == 0) || (t->starts.size() < 4))
+        pthread_exit(NULL);
+
+    triang.insert(t->starts.begin(), t->starts.end());
+    
+}
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
@@ -347,7 +373,7 @@ int main(int argc, char *argv[]){
     //       accuracy testing
     // ---------------------------------------------------------------//
     vtkDataSetReader *inputRdr = vtkDataSetReader::New();
-    inputRdr->SetFileName("Groundtruth_0_0.vtk");
+    inputRdr->SetFileName("Groundtruth.vtk");
     inputRdr->Update();
 
     int numBasisPts = inputRdr->GetOutput()->GetNumberOfPoints();
