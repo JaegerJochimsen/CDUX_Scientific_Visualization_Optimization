@@ -36,7 +36,8 @@ typedef Triangulation::Cell_handle Cell_handle;
 typedef Triangulation::Vertex_handle Vertex_handle;
 typedef Triangulation::Point Vertex;
 
-#define SUBSET 5000
+#define THREADPOOL_SIZE 64
+#define SUBSET 1000
 #define OFFSET 0.001
 #define W 2.5
 #define BXMin 0
@@ -45,6 +46,16 @@ typedef Triangulation::Point Vertex;
 #define BXMax 10
 #define BYMax 10
 #define BZMax 10
+
+typedef struct thread_args 
+{ 
+    std::vector<Vertex> starts;
+    std::vector<Vertex> query;
+    std::vector<double> triang_times;
+    std::vector<double> locate_times;
+    std::vector<double> interp_times;
+    std::vector<double> errors;
+} Thread_Args;
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
@@ -296,8 +307,73 @@ void barycentricInterp(double *endPt, double *pt,
 }
 
 // -------------------------------------------------------------------//
+// Define thread routine
+// -------------------------------------------------------------------//
+void *subdomain_routine(void *args){
+    // TODO:
+    // add timers, add push backs to targs
+    
+    // grab struct full of args
+    Thread_Args *targs = (Thread_Args *)args;
+
+    // if we need to skip this subdomain, exit early
+    if(targs->query.size() == 0 || targs->starts.size() < 4) pthread_exit(NULL);
+    
+    // create triangulation here, needs timer!
+    Triangulation current_t;
+    current_t.insert(targs->starts.begin(), targs->starts.end());
+    
+    // if invalid triang, go no further
+    if(!current_t.is_valid()) pthread_exit(NULL);
+
+    Cell_handle cell;
+    double interpStart[3] = {-1,-1,-1};
+    for(int qId = 0; qId < targs->query.size(); ++qId){
+
+        cell = current_t.locate(targs->query[qId]); 
+
+        Vertex pt = targs->query[qId];
+
+        // if bad location, skip
+        if(current_t.is_infinite(cell)){ continue; }
+            
+        Vertex s0 = cell->vertex(0)->point();
+        Vertex s1 = cell->vertex(1)->point();
+        Vertex s2 = cell->vertex(2)->point();
+        Vertex s3 = cell->vertex(3)->point();
+
+        double *interpEnd = new double[3];
+
+        interpStart[0] = pt.x(); 
+        interpStart[1] = pt.y(); 
+        interpStart[2] = pt.z(); 
+
+        double start0[3] = {s0.x(), s0.y(), s0.z()}; 
+        double start1[3] = {s1.x(), s1.y(), s1.z()}; 
+        double start2[3] = {s2.x(), s2.y(), s2.z()}; 
+        double start3[3] = {s3.x(), s3.y(), s3.z()}; 
+
+        double end0[3] = {s0.x(), s0.y(), s0.z()};
+        double end1[3] = {s1.x(), s1.y(), s1.z()};
+        double end2[3] = {s2.x(), s2.y(), s2.z()};
+        double end3[3] = {s3.x(), s3.y(), s3.z()};
+
+        barycentricInterp(interpEnd, interpStart, 
+                          start0, start1, start2, start3, 
+                          end0, end1, end2, end3);
+
+        double error = euclidDistance3D(interpEnd, interpStart);
+        targs->errors.push_back(error); 
+
+        delete interpEnd;
+    }
+
+    pthread_exit(NULL);
+}
 
 // -------------------------------------------------------------------//
+// -------------------------------------------------------------------//
+
 int main(int argc, char *argv[]){
     // ---------------------------------------------------------------//
     // Parse flags for delaunay style (global, local, neighborhood) 
@@ -540,25 +616,7 @@ int main(int argc, char *argv[]){
                 // calculate error (for this data set we treat end = start so error is how far we've moved)
                 double error = euclidDistance3D(interpEnd, interpStart);
                 errors.push_back(error); 
-               
-                // DEBUG
-                //if(error > 0.4){
-                //    std::cout << "======================================================\n";
-                //    std::cout << "start: " << interpStart[0] << " " << interpStart[1] << " " << interpStart[2] << "\n";
-                //    std::cout << "end: " << interpEnd[0] << " " << interpEnd[1] << " " << interpEnd[2] << "\n";
-                //    std::cout << "-------------------------------------------------------\n";
-                //    std::cout << "s0: " << s0[0] << " " << s0[1] << " " << s0[2] << "\n";
-                //    std::cout << "s1: " << s1[0] << " " << s1[1] << " " << s1[2] << "\n";
-                //    std::cout << "s2: " << s2[0] << " " << s2[1] << " " << s2[2] << "\n";
-                //    std::cout << "s3: " << s3[0] << " " << s3[1] << " " << s3[2] << "\n";
-                //    std::cout << "-------------------------------------------------------\n";
-                //    std::cout << "ev0: " << end0[0] << " " << end0[1] << " " << end0[2] << "\n";
-                //    std::cout << "ev1: " << end1[0] << " " << end1[1] << " " << end1[2] << "\n";
-                //    std::cout << "ev2: " << end2[0] << " " << end2[1] << " " << end2[2] << "\n";
-                //    std::cout << "ev3: " << end3[0] << " " << end3[1] << " " << end3[2] << "\n";
-                //}
-
-
+    
                 // write start and end points to outfile
                 outfile << pt.x() << " " << pt.y() << " " << pt.z() << "\n";
                 outfile << interpEnd[0] << " " << interpEnd[1] << " " << interpEnd[2] << "\n";
@@ -574,6 +632,44 @@ int main(int argc, char *argv[]){
     // ---------------------------------------------------------------//
     // End Interp and locate Global
     // ---------------------------------------------------------------//
+    else if(doNeighbor){
+        // init thread structs
+        Thread_Args **targ_array = (Thread_Args **)malloc(sizeof(Thread_Args *)*THREADPOOL_SIZE);
+        pthread_t *threads = (pthread_t *)malloc(sizeof(pthread_t)*THREADPOOL_SIZE);
+
+        for(int i = 0; i < THREADPOOL_SIZE; ++i){
+            targ_array[i] = (Thread_Args *)malloc(sizeof(Thread_Args));
+            
+            // set up neighbor vectors
+            std::vector<Vertex> neighborhood;
+
+            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[i].begin(), subdomain_start_basis[i].end());
+
+            std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[i][0]);
+            
+            // add the neighboring subdomains
+            for(int j = 0; j < neighborhoodIDs.size(); ++j){
+
+                int id = neighborhoodIDs[j];
+                
+                if(id != -1 && subdomain_start_basis[id].size() != 0){
+                        neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
+                }
+            }
+ 
+            targ_array[i]->starts = neighborhood;
+            targ_array[i]->query = subdomain_query_points[i];
+            targ_array[i]->triang_times = std::vector<double>(); 
+            targ_array[i]->locate_times = std::vector<double>(); 
+            targ_array[i]->interp_times = std::vector<double>(); 
+            targ_array[i]->errors = std::vector<double>();
+
+            pthread_create(&(threads[i]), NULL, subdomain_routine, (void *)targ_array[i]);
+        }
+        for(int i = 0; i < THREADPOOL_SIZE; ++i){
+            pthread_join(threads[i], NULL);
+        }
+    }
     else{
         
         // ---------------------------------------------------------------//
@@ -733,24 +829,6 @@ int main(int argc, char *argv[]){
                 double error = euclidDistance3D(interpEnd, interpStart);
                 errors.push_back(error); 
                 
-                // DEBUG
-                //if(error > 0.4){
-                //    std::cout << "========================================================\n";
-                //    std::cout << "start: " << interpStart[0] << " " << interpStart[1] << " " << interpStart[2] << "\n";
-                //    std::cout << "end: " << interpEnd[0] << " " << interpEnd[1] << " " << interpEnd[2] << "\n";
-                //    std::cout << "-------------------------------------------------------\n";
-                //    std::cout << "s0: " << s0[0] << " " << s0[1] << " " << s0[2] << "\n";
-                //    std::cout << "s1: " << s1[0] << " " << s1[1] << " " << s1[2] << "\n";
-                //    std::cout << "s2: " << s2[0] << " " << s2[1] << " " << s2[2] << "\n";
-                //    std::cout << "s3: " << s3[0] << " " << s3[1] << " " << s3[2] << "\n";
-                //    std::cout << "-------------------------------------------------------\n";
-                //    std::cout << "ev0: " << end0[0] << " " << end0[1] << " " << end0[2] << "\n";
-                //    std::cout << "ev1: " << end1[0] << " " << end1[1] << " " << end1[2] << "\n";
-                //    std::cout << "ev2: " << end2[0] << " " << end2[1] << " " << end2[2] << "\n";
-                //    std::cout << "ev3: " << end3[0] << " " << end3[1] << " " << end3[2] << "\n";
-                //}
-
-
                 // write start and end points to outfile
                 outfile << pt.x() << " " << pt.y() << " " << pt.z() << "\n";
                 outfile << interpEnd[0] << " " << interpEnd[1] << " " << interpEnd[2] << "\n";
