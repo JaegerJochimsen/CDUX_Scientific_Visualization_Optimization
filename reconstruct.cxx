@@ -132,112 +132,6 @@ std::vector<int> neighborDoms(Vertex v){
 
     return neighborDomains;
 }
-// -------------------------------------------------------------------//
-// -------------------------------------------------------------------//
-
-void grabStartVerts(const char *filename){
-    // our file that will contain the start verts of ABC
-    std::ofstream outfile("ABC_starts.vtk");
-    
-    // set up header (need to do this one?)
-    outfile << "# vtk DataFile version 3.0\n";
-
-
-    // set up reader to grab verts
-    vtkDataSetReader *rdr = vtkDataSetReader::New();
-    rdr->SetFileName(filename);
-    rdr->Update();
-    int numPts = rdr->GetOutput()->GetNumberOfPoints();
-    
-    // set VTK notifiers
-    outfile << "ASCII\n";
-    outfile << "DATASET UNSTRUCTURED_GRID\n";
-    outfile << "POINTS " << numPts/2 << " double\n";
-
-    for(int i = 0; i < (numPts/2); ++i){
-        double *pt = rdr->GetOutput()->GetPoint(2*i);
-        outfile << pt[0] << " " << pt[1] << " " << pt[2] << "\n";
-    }
-    
-    rdr->Delete();
-    return;
-}
-
-// -------------------------------------------------------------------//
-// -------------------------------------------------------------------//
-
-/* Based on TD-volume calculation - ke!san Online Calculator:
- * https://keisan.casio.com/has10/SpecExec.cgi?path=05000000.Mathematics/01000600.Space%2520geometry/10000300.Volume%2520of%2520a%2520tetrahedron%2520and%2520a%2520parallelepiped/default.xml&charset=utf-8
- */
-double tetrahedronVolume(double *x, double *y, double *z){
-    double first = (x[3] - x[0])*((y[1] - y[0])*(z[2] - z[0]) - (z[1] - z[0])*(y[2] - y[0]));
-
-    double second = (y[3] - y[0])*((z[1] - z[0])*(x[2] - x[0]) - (x[1] - x[0])*(z[2] - z[0]));
-    
-    double third = (z[3] - z[0])*((x[1] - x[0])*(y[2] - y[0]) - (y[1] - y[0])*(x[2] - x[0]));
-
-    double sum = first + second + third;
-
-    return (double)(sum / 6.0);
-}
-
-void tetraBarycentric(double *endPt, double *pt, 
-                       double *p0Start, double *p1Start, double *p2Start, double *p3Start, 
-                       double *p0End, double *p1End, double *p2End, double *p3End)
-{
-    vtkTetra *tetra = vtkTetra::New(); 
-
-    double vol0 = tetra->ComputeVolume(pt, p0Start, p1Start, p2Start);
-    double vol1 = tetra->ComputeVolume(pt, p1Start, p2Start, p3Start); 
-    double vol2 = tetra->ComputeVolume(pt, p0Start, p1Start, p3Start); 
-    double vol3 = tetra->ComputeVolume(pt, p0Start, p2Start, p3Start); 
-    double totalVol = tetra->ComputeVolume(p0Start, p1Start, p2Start, p3Start);
-
-    //         1
-    //         +
-    //       / | \
-    //      /  |  \
-    //     /   | 2 \
-    //    /_ - + - _\
-    // 0 +___________+ 3
-
-    double prop012 = vol0 / totalVol;
-    double prop123 = vol1 / totalVol;
-    double prop013 = vol2 / totalVol;
-    double prop023 = vol3 / totalVol;
-
-    std::cout << "total: " << prop012 + prop123 + prop013 + prop023 << "\n";
-
-
-    double xval = p0End[0]*prop123 + p1End[0]*prop023 + p2End[0]*prop013 + p3End[0]*prop012;
-    double yval = p0End[1]*prop123 + p1End[1]*prop023 + p2End[1]*prop013 + p3End[1]*prop012;
-    double zval = p0End[2]*prop123 + p1End[2]*prop023 + p2End[2]*prop013 + p3End[2]*prop012;
-
-    endPt[0] = xval;
-    endPt[1] = yval;
-    endPt[2] = zval;
-
-    tetra->Delete();
-}
-
-void test_td(){
-    double xs[4] = {0,2,0,1};
-    double ys[4] = {0,0,3,1};
-    double zs[4] = {0,0,0,2};
-
-    double p0[3] = {0,0,0};
-    double p1[3] = {2,0,0};
-    double p2[3] = {0,3,0};
-    double p3[3] = {1,1,2};
-
-    vtkTetra *tetrahedron = vtkTetra::New();
-    double vtkVol = tetrahedron->ComputeVolume(p0,p1,p2,p3);
-    
-
-    double vol = tetrahedronVolume(xs, ys, zs);
-    std::cout << "vol: " << vol << '\n';
-    std::cout << "vtk vol: " << vtkVol << '\n';
-}
 
 // -------------------------------------------------------------------//
 // -------------------------------------------------------------------//
@@ -307,68 +201,115 @@ void barycentricInterp(double *endPt, double *pt,
 }
 
 // -------------------------------------------------------------------//
-// Define thread routine
+// Define thread routine -- wait on this
 // -------------------------------------------------------------------//
-void *subdomain_routine(void *args){
-    // TODO:
-    // add timers, add push backs to targs
-    
-    // grab struct full of args
-    Thread_Args *targs = (Thread_Args *)args;
+//void *subdomain_routine(void *args){
+//    // TODO:
+//    // add timers, add push backs to targs
+//    
+//    // grab struct full of args
+//    Thread_Args *targs = (Thread_Args *)args;
+//
+//    // if we need to skip this subdomain, exit early
+//    if(targs->query.size() == 0 || targs->starts.size() < 4) pthread_exit(NULL);
+//    
+//    // create triangulation here, needs timer!
+//    Triangulation current_t;
+//    current_t.insert(targs->starts.begin(), targs->starts.end());
+//    
+//    // if invalid triang, go no further
+//    if(!current_t.is_valid()) pthread_exit(NULL);
+//
+//    Cell_handle cell;
+//    double interpStart[3] = {-1,-1,-1};
+//    for(int qId = 0; qId < targs->query.size(); ++qId){
+//
+//        cell = current_t.locate(targs->query[qId]); 
+//
+//        Vertex pt = targs->query[qId];
+//
+//        // if bad location, skip
+//        if(current_t.is_infinite(cell)){ continue; }
+//            
+//        Vertex s0 = cell->vertex(0)->point();
+//        Vertex s1 = cell->vertex(1)->point();
+//        Vertex s2 = cell->vertex(2)->point();
+//        Vertex s3 = cell->vertex(3)->point();
+//
+//        double *interpEnd = new double[3];
+//
+//        interpStart[0] = pt.x(); 
+//        interpStart[1] = pt.y(); 
+//        interpStart[2] = pt.z(); 
+//
+//        double start0[3] = {s0.x(), s0.y(), s0.z()}; 
+//        double start1[3] = {s1.x(), s1.y(), s1.z()}; 
+//        double start2[3] = {s2.x(), s2.y(), s2.z()}; 
+//        double start3[3] = {s3.x(), s3.y(), s3.z()}; 
+//
+//        double end0[3] = {s0.x(), s0.y(), s0.z()};
+//        double end1[3] = {s1.x(), s1.y(), s1.z()};
+//        double end2[3] = {s2.x(), s2.y(), s2.z()};
+//        double end3[3] = {s3.x(), s3.y(), s3.z()};
+//
+//        barycentricInterp(interpEnd, interpStart, 
+//                          start0, start1, start2, start3, 
+//                          end0, end1, end2, end3);
+//
+//        double error = euclidDistance3D(interpEnd, interpStart);
+//        targs->errors.push_back(error); 
+//
+//        delete interpEnd;
+//    }
+//
+//    pthread_exit(NULL);
+//}
 
-    // if we need to skip this subdomain, exit early
-    if(targs->query.size() == 0 || targs->starts.size() < 4) pthread_exit(NULL);
-    
-    // create triangulation here, needs timer!
-    Triangulation current_t;
-    current_t.insert(targs->starts.begin(), targs->starts.end());
-    
-    // if invalid triang, go no further
-    if(!current_t.is_valid()) pthread_exit(NULL);
-
-    Cell_handle cell;
-    double interpStart[3] = {-1,-1,-1};
-    for(int qId = 0; qId < targs->query.size(); ++qId){
-
-        cell = current_t.locate(targs->query[qId]); 
-
-        Vertex pt = targs->query[qId];
-
-        // if bad location, skip
-        if(current_t.is_infinite(cell)){ continue; }
-            
-        Vertex s0 = cell->vertex(0)->point();
-        Vertex s1 = cell->vertex(1)->point();
-        Vertex s2 = cell->vertex(2)->point();
-        Vertex s3 = cell->vertex(3)->point();
-
-        double *interpEnd = new double[3];
-
-        interpStart[0] = pt.x(); 
-        interpStart[1] = pt.y(); 
-        interpStart[2] = pt.z(); 
-
-        double start0[3] = {s0.x(), s0.y(), s0.z()}; 
-        double start1[3] = {s1.x(), s1.y(), s1.z()}; 
-        double start2[3] = {s2.x(), s2.y(), s2.z()}; 
-        double start3[3] = {s3.x(), s3.y(), s3.z()}; 
-
-        double end0[3] = {s0.x(), s0.y(), s0.z()};
-        double end1[3] = {s1.x(), s1.y(), s1.z()};
-        double end2[3] = {s2.x(), s2.y(), s2.z()};
-        double end3[3] = {s3.x(), s3.y(), s3.z()};
-
-        barycentricInterp(interpEnd, interpStart, 
-                          start0, start1, start2, start3, 
-                          end0, end1, end2, end3);
-
-        double error = euclidDistance3D(interpEnd, interpStart);
-        targs->errors.push_back(error); 
-
-        delete interpEnd;
+// -------------------------------------------------------------------//
+// -------------------------------------------------------------------//
+void sortInputs(vtkDataSetReader *               inputRdr, 
+                std::vector<std::vector<Vertex>> &startBasis, 
+                std::vector<std::vector<Vertex>> &endBasis,
+                std::vector<std::vector<Vertex>> &queryPts,
+                std::vector<Vertex>              &allStart,
+                long                             numBasisPts)
+{
+    // a bounding box per subdomain
+    int ***start_bboxes = (int ***)malloc(sizeof(int **)*64);
+    for(int j = 0; j < 64; ++j){
+        start_bboxes[j] = (int **)malloc(sizeof(int *)*8);
+        for(int k = 0; k < 8; ++k){
+            start_bboxes[j][k] = (int *)calloc(3, sizeof(int));
+        } 
     }
 
-    pthread_exit(NULL);
+    int subdomain_count = 0;
+    long i = 0;
+    for(; i < (long)(numBasisPts/2); ++i){
+        double *start_point = inputRdr->GetOutput()->GetPoint(2*i);
+        double *end_point = inputRdr->GetOutput()->GetPoint(2*i + 1);
+ 
+        // get subdomain id 
+        int subdomain_id = getDomainIndex(start_point[0], start_point[1], start_point[2]);
+
+        // Take random subset of input pts (of size SUBSET)
+        //double r = ((double)rand() / (RAND_MAX));
+        //double r = 0.0;
+        if(subdomain_count < SUBSET){
+            // query pts are just the start, their projected end should be the same for this test
+            queryPts[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+            subdomain_count++;
+        }
+        else{
+            // for use in creating global delaunay
+            allStart.push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+            
+            // for use in creating local and neighbor delaunays
+            startBasis[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+            endBasis[subdomain_id].push_back(Vertex(end_point[0], end_point[1], end_point[2]));
+        }
+    }
+    return;
 }
 
 // -------------------------------------------------------------------//
@@ -449,44 +390,14 @@ int main(int argc, char *argv[]){
     // End timers and timing arrays
     // ---------------------------------------------------------------//
         
-    // ---------------------------------------------------------------//
-    // Start I/O and point organization
-    // ---------------------------------------------------------------//
     // these hold Vertex objects
     std::vector<std::vector<Vertex>> subdomain_start_basis(64);
     std::vector<std::vector<Vertex>> subdomain_end_basis(64);
     std::vector<std::vector<Vertex>> subdomain_query_points(64);
     std::vector<Vertex> all_start_basis;
         
-    int subdomain_count = 0;
-    // fill start, end, and query points
-    for(int i = 0; i < (int)(numBasisPts/2); ++i){
-        double *start_point = inputRdr->GetOutput()->GetPoint(2*i);
-        double *end_point = inputRdr->GetOutput()->GetPoint(2*i + 1);
-        
-        // get subdomain id 
-        int subdomain_id = getDomainIndex(start_point[0], start_point[1], start_point[2]);
-
-        // Take random subset of input pts (of size SUBSET)
-        double r = ((double)rand() / (RAND_MAX));
-        //double r = 0.0;
-        if(subdomain_count < SUBSET && (r < 0.5)){
-            // query pts are just the start, their projected end should be the same for this test
-            subdomain_query_points[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
-            subdomain_count++;
-        }
-        else{
-            // for use in creating global delaunay
-            all_start_basis.push_back(Vertex(start_point[0], start_point[1], start_point[2]));
-            
-            // for use in creating local and neighbor delaunays
-            subdomain_start_basis[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
-            subdomain_end_basis[subdomain_id].push_back(Vertex(end_point[0], end_point[1], end_point[2]));
-        }
-    }
-    // ---------------------------------------------------------------//
-    // End I/O and point organization
-    // ---------------------------------------------------------------//
+    // sort into subdomains
+    sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts);
 
     // ---------------------------------------------------------------//
     // Start Interp and locate Global
@@ -629,47 +540,11 @@ int main(int argc, char *argv[]){
         // End interpolation Global
         // ---------------------------------------------------------------//
     }
+
     // ---------------------------------------------------------------//
     // End Interp and locate Global
     // ---------------------------------------------------------------//
-    else if(doNeighbor){
-        // init thread structs
-        Thread_Args **targ_array = (Thread_Args **)malloc(sizeof(Thread_Args *)*THREADPOOL_SIZE);
-        pthread_t *threads = (pthread_t *)malloc(sizeof(pthread_t)*THREADPOOL_SIZE);
 
-        for(int i = 0; i < THREADPOOL_SIZE; ++i){
-            targ_array[i] = (Thread_Args *)malloc(sizeof(Thread_Args));
-            
-            // set up neighbor vectors
-            std::vector<Vertex> neighborhood;
-
-            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[i].begin(), subdomain_start_basis[i].end());
-
-            std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[i][0]);
-            
-            // add the neighboring subdomains
-            for(int j = 0; j < neighborhoodIDs.size(); ++j){
-
-                int id = neighborhoodIDs[j];
-                
-                if(id != -1 && subdomain_start_basis[id].size() != 0){
-                        neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
-                }
-            }
- 
-            targ_array[i]->starts = neighborhood;
-            targ_array[i]->query = subdomain_query_points[i];
-            targ_array[i]->triang_times = std::vector<double>(); 
-            targ_array[i]->locate_times = std::vector<double>(); 
-            targ_array[i]->interp_times = std::vector<double>(); 
-            targ_array[i]->errors = std::vector<double>();
-
-            pthread_create(&(threads[i]), NULL, subdomain_routine, (void *)targ_array[i]);
-        }
-        for(int i = 0; i < THREADPOOL_SIZE; ++i){
-            pthread_join(threads[i], NULL);
-        }
-    }
     else{
         
         // ---------------------------------------------------------------//
