@@ -37,7 +37,7 @@ find_package( Boost REQUIRED )
 
 include(CGAL_CreateSingleSourceCGALProgram)
 include_directories(BEFORE "../../include")
-add_executable(reconstruct reconstruct.cxx)
+add_executable(reconstruct reconstruct.cxx util.cxx)
 
 # ------------------------------------------------------------------ #
 # ------------------------------------------------------------------ #
