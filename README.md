@@ -3,8 +3,12 @@
 Consider a set of basis flows S, where a flow is denoted by a start and an end point,
 S = {(s<sub>i</sub>, e<sub>i</sub>) | 0 <= i <= |S|}.
 
-Our goal is to interpolate end positions for a set of query points Q, where 
+Our <strong>goal</strong> is to interpolate end positions for a set of query points Q, where 
 Q = {(q<sub>i</sub>, ?) | 0 <= i <= |Q|}.
+
+All points containted within S and Q, are scattered over a cube-shaped domain, and that domain
+is split into 64 subdomains (each of uniform size and shape).
+
 ## Dependencies
 1. CGAL
 2. VTK
