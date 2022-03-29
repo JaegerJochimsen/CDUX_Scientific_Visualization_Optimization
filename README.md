@@ -1,7 +1,10 @@
 # Optimizations for Post-Hoc Interpolation in Flow Visualization Using Delaunay Triangulations
 ## Background:
-Consider a set of basis flows, where a flow is denoted by a start and an end point (s<sub>i</sub>, e<sub>i</sub>)
+Consider a set of basis flows S, where a flow is denoted by a start and an end point,
+S = {(s<sub>i</sub>, e<sub>i</sub>) | 0 <= i <= |S|}.
 
+Our goal is to interpolate end positions for a set of query points Q, where 
+Q = {(q<sub>i</sub>, ?) | 0 <= i <= |Q|}.
 ## Dependencies
 1. CGAL
 2. VTK
