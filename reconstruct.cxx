@@ -23,76 +23,11 @@ typedef struct thread_args
     std::vector<double> errors;
 } Thread_Args;
 
-// -------------------------------------------------------------------//
-// Define thread routine -- wait on this
-// -------------------------------------------------------------------//
-//void *subdomain_routine(void *args){
-//    // TODO:
-//    // add timers, add push backs to targs
-//    
-//    // grab struct full of args
-//    Thread_Args *targs = (Thread_Args *)args;
-//
-//    // if we need to skip this subdomain, exit early
-//    if(targs->query.size() == 0 || targs->starts.size() < 4) pthread_exit(NULL);
-//    
-//    // create triangulation here, needs timer!
-//    Triangulation current_t;
-//    current_t.insert(targs->starts.begin(), targs->starts.end());
-//    
-//    // if invalid triang, go no further
-//    if(!current_t.is_valid()) pthread_exit(NULL);
-//
-//    Cell_handle cell;
-//    double interpStart[3] = {-1,-1,-1};
-//    for(int qId = 0; qId < targs->query.size(); ++qId){
-//
-//        cell = current_t.locate(targs->query[qId]); 
-//
-//        Vertex pt = targs->query[qId];
-//
-//        // if bad location, skip
-//        if(current_t.is_infinite(cell)){ continue; }
-//            
-//        Vertex s0 = cell->vertex(0)->point();
-//        Vertex s1 = cell->vertex(1)->point();
-//        Vertex s2 = cell->vertex(2)->point();
-//        Vertex s3 = cell->vertex(3)->point();
-//
-//        double *interpEnd = new double[3];
-//
-//        interpStart[0] = pt.x(); 
-//        interpStart[1] = pt.y(); 
-//        interpStart[2] = pt.z(); 
-//
-//        double start0[3] = {s0.x(), s0.y(), s0.z()}; 
-//        double start1[3] = {s1.x(), s1.y(), s1.z()}; 
-//        double start2[3] = {s2.x(), s2.y(), s2.z()}; 
-//        double start3[3] = {s3.x(), s3.y(), s3.z()}; 
-//
-//        double end0[3] = {s0.x(), s0.y(), s0.z()};
-//        double end1[3] = {s1.x(), s1.y(), s1.z()};
-//        double end2[3] = {s2.x(), s2.y(), s2.z()};
-//        double end3[3] = {s3.x(), s3.y(), s3.z()};
-//
-//        barycentricInterp(interpEnd, interpStart, 
-//                          start0, start1, start2, start3, 
-//                          end0, end1, end2, end3);
-//
-//        double error = euclidDistance3D(interpEnd, interpStart);
-//        targs->errors.push_back(error); 
-//
-//        delete interpEnd;
-//    }
-//
-//    pthread_exit(NULL);
-//}
 
 int main(int argc, char *argv[]){
     // ---------------------------------------------------------------//
     // Parse flags for delaunay style (global, local, neighborhood) 
     // ---------------------------------------------------------------//
-    foo();
     bool parallel = false, doGlobal = false, doLocal = false, doNeighbor = false;
     int opt;
 
@@ -170,8 +105,8 @@ int main(int argc, char *argv[]){
     std::vector<std::vector<Vertex>> subdomain_query_points(64);
     std::vector<Vertex> all_start_basis;
         
-    // sort into subdomains
-    sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts);
+    // sort into subdomains and establish bboxes
+    double ***bboxes = sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts);
 
     // ---------------------------------------------------------------//
     // Start Interp and locate Global
@@ -354,25 +289,28 @@ int main(int argc, char *argv[]){
             }
             // create cgal delaunay over current subdomain and neighbor domains
             else if(doNeighbor){
+
                 // hold neighbors
                 std::vector<Vertex> neighborhood;
-                
-                // add the central subdomain
-                neighborhood.insert(neighborhood.begin(), subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
+                buildNeighborhood(neighborhood, subdomain_start_basis, bboxes, domId);
+                //if(true) return 0;
+                //
+                //// add the central subdomain
+                //neighborhood.insert(neighborhood.begin(), subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
 
-                // grab all IDs for neighbor domains
-                std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[domId][0]);
+                //// grab all IDs for neighbor domains
+                //std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[domId][0]);
 
-                // add the neighboring subdomains
-                //int count = 0;
-                for(int i = 0; i < neighborhoodIDs.size(); ++i){
+                //// add the neighboring subdomains
+                ////int count = 0;
+                //for(int i = 0; i < neighborhoodIDs.size(); ++i){
 
-                    int id = neighborhoodIDs[i];
-                    
-                    if(id != -1 && subdomain_start_basis[id].size() != 0){
-                            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
-                    }
-                }
+                //    int id = neighborhoodIDs[i];
+                //    
+                //    if(id != -1 && subdomain_start_basis[id].size() != 0){
+                //            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
+                //    }
+                //}
 
                 // Start triang timer
                 start = std::chrono::high_resolution_clock::now();
@@ -612,6 +550,14 @@ int main(int argc, char *argv[]){
 
     // clean up vtk memory
     inputRdr->Delete();
+
+    for(int i = 0; i < 64; free(bboxes[0][i++]));
+    free(bboxes[0]);
+
+    for(int i = 0; i < 64; free(bboxes[1][i++]));
+    free(bboxes[1]);
+
+    free(bboxes);
     
     return 0;
 }

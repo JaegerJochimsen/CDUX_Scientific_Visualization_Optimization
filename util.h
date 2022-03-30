@@ -18,12 +18,12 @@
 
 #define SUBSET 1000
 #define W 2.5
-#define BXMin 0
-#define BYMin 0
-#define BZMin 0
-#define BXMax 10
-#define BYMax 10
-#define BZMax 10
+#define BXMin 0.0
+#define BYMin 0.0
+#define BZMin 0.0
+#define BXMax 10.0
+#define BYMax 10.0
+#define BZMax 10.0
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Triangulation_vertex_base_with_info_3<unsigned int, K> Vb; 
@@ -34,27 +34,110 @@ typedef Triangulation::Vertex_handle Vertex_handle;
 typedef Triangulation::Point Vertex;
 
 
-void foo();
+/* vectorIndex()
+ * Description: find the index of Vertex p in vector v
+ * Return: index
+ */
+int vectorIndex(std::vector<Vertex> v, Vertex p);
 
-int vectorIndex(std::vector<Vertex>, Vertex);
 
-bool pointInBoundingBox(double vx, double vy, double vz, float bxMin, float bxMax, float byMin, float byMax, float bzMin, float bzMax);
 
+/* pointInBoundingBox()
+ * 
+ * Description:
+ *      This function determines if a given point is within one of the 
+ *      bounding boxes defined by BXMin, BXMax, BYMin, BYMax, ...
+ *
+ * Return:
+ *      true if the point in the box, false otherwise
+ */
+bool pointInBoundingBox(double vx, double vy, double vz, float bxMin, 
+                        float bxMax, float byMin, float byMax, 
+                        float bzMin, float bzMax);
+
+
+
+/* getDomainIndex()
+ * Description: get the domain index (currently 0-63) that the 
+ *              point (x,y,z) is in
+ * Return: index
+ */
 int getDomainIndex(double x, double y, double z);
 
+
+
+/* neighborDoms()
+ * Description: collect the indexes of the neighboring subdomains for a given
+ *              subdomain.
+ * Return: vector containing all the indexes of neighbor subdomains
+ */
 std::vector<int> neighborDoms(Vertex v);
 
+
+
+/* euclidDistance3D()
+ * Description: 3D distance between two points
+ *
+ */
 double euclidDistance3D(double *p0, double *p1);
 
-void barycentricInterp(double *endPt, double *pt, 
-                       double *p0Start, double *p1Start, double *p2Start, double *p3Start, 
-                       double *p0End, double *p1End, double *p2End, double *p3End);
 
-void sortInputs(vtkDataSetReader *               inputRdr, 
+
+/*
+ * This is based off a paper titled:  
+ * "3D Barycentric Interpolation Method for Animal Brainmapping"
+ *
+ * Citation:
+ *       P. Pešková, M. Piorecký, Č. Vejmola, V. Koudelka, V. Krajča 
+ *       and V. Piorecká, 
+ *       "3D Barycentric Interpolation Method for Animal Brainmapping," 2019
+ *       E-Health and Bioengineering Conference (EHB), 2019, pp. 1-4, 
+ *       doi: 10.1109/EHB47216.2019.8969996.
+ * 
+ * Interpolation
+ *      
+ *              Σ (V_e/d_ie)
+ *      V_i =  -------------  
+ *              Σ (1/d_ie)
+ *
+ *      V_i is the interpolated vertex
+ *
+ *      V_e is (in turn) each of the 4 vertices of the tetrahedron that 
+ *      contains V_i's start vert
+ *
+ *      d_ie is the distance from the current base vertex V_e and V_i
+ */
+void barycentricInterp(double *endPt, double *pt, 
+                       double *p0Start, double *p1Start, 
+                       double *p2Start, double *p3Start, 
+                       double *p0End, double *p1End, double *p2End, 
+                       double *p3End);
+
+
+
+/* modifyBoudningBox()
+ * Description: expand a bounding box if a point is outside it
+ * Return: void, modifies parameter bbox
+ */
+void modifyBoundingBox(double **bbox, double *pt);
+
+
+
+/* sortInputs()
+ * Description: sort input points into start, end, and query points and 
+ *              place them in the correct vector (which corresponds to 
+ *              the subdomain they are located in)
+ *
+ * Return: bounding box for start verts
+ * Side Effect: fills passed in vectors
+ */
+double ***sortInputs(vtkDataSetReader *               inputRdr, 
                 std::vector<std::vector<Vertex>> &startBasis, 
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
                 std::vector<Vertex>              &allStart,
                 long                             numBasisPts);
+
+void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vector<Vertex>> start_basis, double ***bboxes, int domId);
 
 #endif /* _UTIL_H_ */
