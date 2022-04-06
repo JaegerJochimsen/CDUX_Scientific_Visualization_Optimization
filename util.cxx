@@ -227,16 +227,7 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
 void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vector<Vertex>> start_basis, double ***bboxes, int domId){
     // add the central subdomain
     neighborhood.insert(neighborhood.begin(), start_basis[domId].begin(), start_basis[domId].end());
-
-    //std::cout << "Query Box: (" 
-    //          << bboxes[1][domId][0] << ","
-    //          << bboxes[1][domId][1] << ","
-    //          << bboxes[1][domId][2] << ")\n";
-    //std::cout << "Start Box: (" 
-    //          << bboxes[0][domId][0] << ","
-    //          << bboxes[0][domId][1] << ","
-    //          << bboxes[0][domId][2] << ")\n";
-
+    
     // check relationship between query box and central domain box
     // do so only in the direction we need to
     // Here identify which directions we need to expand in
@@ -431,6 +422,35 @@ void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vecto
     return;
 }
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
+bool onEdge(double vx, double vy, double vz){
+    
+    // get the bottom left vertex
+    double bottom_x = (int)(vx/W)*W;
+    double bottom_y = (int)(vy/W)*W;
+    double bottom_z = (int)(vz/W)*W;
+    
+    double outerbbox[] = { bottom_x, bottom_y, bottom_z,
+                           bottom_x + (double)W, bottom_y + (double)W, bottom_z + (double)W,
+                        };
+
+    double center[] = {bottom_x + (double)(W/2), bottom_y + (double)(W/2), bottom_z + (double)(W/2)};
+
+    // what % inner is of outer
+    double N = 0.95;
+
+    double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), center[2] - (double)N*(double)(W/2),
+                          center[0] + (double)N*(double)(W/2), center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
+                        };
+
+    // if in outer box and not in inner box
+    bool in_outer = pointInBoundingBox(vx,vy,vz,outerbbox[0],outerbbox[1],outerbbox[2], outerbbox[3], outerbbox[4],outerbbox[5]);
+    bool in_inner = pointInBoundingBox(vx,vy,vz,innerbbox[0],innerbbox[1], innerbbox[2], innerbbox[3], innerbbox[4],innerbbox[5]);
+
+    return in_outer && in_inner;
+    
+}
 
 

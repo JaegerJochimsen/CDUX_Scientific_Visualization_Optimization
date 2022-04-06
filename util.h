@@ -51,9 +51,9 @@ int vectorIndex(std::vector<Vertex> v, Vertex p);
  * Return:
  *      true if the point in the box, false otherwise
  */
-bool pointInBoundingBox(double vx, double vy, double vz, float bxMin, 
-                        float bxMax, float byMin, float byMax, 
-                        float bzMin, float bzMax);
+bool pointInBoundingBox(double vx, double vy, double vz, double bxMin, 
+                        double bxMax, double byMin, double byMax, 
+                        double bzMin, double bzMax);
 
 
 
@@ -140,4 +140,5 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
 
 void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vector<Vertex>> start_basis, double ***bboxes, int domId);
 
+bool onEdge(double vx, double vy, double vz);
 #endif /* _UTIL_H_ */
