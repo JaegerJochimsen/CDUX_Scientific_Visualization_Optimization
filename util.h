@@ -24,6 +24,7 @@
 #define BXMax 10.0
 #define BYMax 10.0
 #define BZMax 10.0
+#define N 0.95
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Triangulation_vertex_base_with_info_3<unsigned int, K> Vb; 
@@ -140,5 +141,6 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
 
 void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vector<Vertex>> start_basis, double ***bboxes, int domId);
 
-bool onEdge(double vx, double vy, double vz);
+bool edgePoint(double vx, double vy, double vz);
+
 #endif /* _UTIL_H_ */

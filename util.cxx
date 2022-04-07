@@ -425,7 +425,7 @@ void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vecto
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-bool onEdge(double vx, double vy, double vz){
+bool edgePoint(double vx, double vy, double vz){
     
     // get the bottom left vertex
     double bottom_x = (int)(vx/W)*W;
@@ -438,18 +438,15 @@ bool onEdge(double vx, double vy, double vz){
 
     double center[] = {bottom_x + (double)(W/2), bottom_y + (double)(W/2), bottom_z + (double)(W/2)};
 
-    // what % inner is of outer
-    double N = 0.95;
-
     double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), center[2] - (double)N*(double)(W/2),
                           center[0] + (double)N*(double)(W/2), center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
                         };
-
+    
     // if in outer box and not in inner box
-    bool in_outer = pointInBoundingBox(vx,vy,vz,outerbbox[0],outerbbox[1],outerbbox[2], outerbbox[3], outerbbox[4],outerbbox[5]);
-    bool in_inner = pointInBoundingBox(vx,vy,vz,innerbbox[0],innerbbox[1], innerbbox[2], innerbbox[3], innerbbox[4],innerbbox[5]);
+    bool in_outer = pointInBoundingBox(vx,vy,vz,outerbbox[0],outerbbox[3],outerbbox[1], outerbbox[4], outerbbox[2],outerbbox[5]);
+    bool in_inner = pointInBoundingBox(vx,vy,vz,innerbbox[0],innerbbox[3], innerbbox[1], innerbbox[4], innerbbox[2],innerbbox[5]);
 
-    return in_outer && in_inner;
+    return in_outer && !in_inner;
     
 }
 
