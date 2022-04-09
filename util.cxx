@@ -176,7 +176,60 @@ bool edgePoint(double vx, double vy, double vz){
     return in_outer && !in_inner;
 }
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
 // FIXME: need to identify what face we are closest too! Do this with more bounding boxes!!
+int *nearestSubdomains(double vx, double vy, double vz){
+    int *nearest = (int *)calloc((size_t)26, sizeof(int));
+    
+    // Here we will define a new convention for face naming
+    // These will be used to fill values for bounding boxes (1 per face)
+    // Face # - Orientation
+    // 0        Bottom
+    // 1        Left
+    // 2        Front
+    // 3        Right
+    // 4        Back
+    // 5        Top
+
+    // copy globals as an appropriate type
+    double w = (double)W;
+    double n = (double)N;
+    double comp_n = (double)(1.0 - n); // compliment of N
+
+    // get the bottom left vertex of subdomain
+    double bottom_x = (int)(vx/W)*W;
+    double bottom_y = (int)(vy/W)*W;
+    double bottom_z = (int)(vz/W)*W;
+    
+    // Define bounding boxes. 
+    // Ordered coord0, coordmax0, ...                  
+    double bottom[] = {bottom_x, bottom_x + w,         
+                       bottom_y, bottom_y + comp_n*w,  
+                       bottom_z, bottom_z + w
+                      };     
+
+    double left[] = {bottom_x, bottom_x + comp_n*w,
+                     bottom_y, bottom_y + w,
+                     bottom_z, bottom_z + w
+                    };
+
+    double front[] = {bottom_x, bottom_x + w,
+                      bottom_y, bottom_y + w,
+                      bottom_z, bottom_z + comp_n*w
+                     };
+
+    double right[] = {bottom_x + n*w, bottom_x + w,
+                      bottom_y, bottom_y + w,
+                      bottom_z, bottom_z + w
+                     };
+
+    double back[] = {bottom_x, bottom_x + w};
+
+    double top[] = {};
+    nearest[0]
+}
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
