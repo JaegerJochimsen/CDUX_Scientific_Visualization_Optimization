@@ -179,7 +179,6 @@ bool edgePoint(double vx, double vy, double vz){
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-// FIXME: need to identify what face we are closest too! Do this with more bounding boxes!!
 int *nearestSubdomains(double vx, double vy, double vz){
     int *nearest = (int *)calloc((size_t)26, sizeof(int));
     
@@ -225,10 +224,40 @@ int *nearestSubdomains(double vx, double vy, double vz){
                       bottom_z, bottom_z + w
                      };
 
-    double back[] = {bottom_x, bottom_x + w};
+    double back[] = {bottom_x, bottom_x + w,
+                     bottom_y, bottom_y + w,
+                     bottom_z + n*w, bottom_z + w 
+                    };
 
-    double top[] = {};
-    nearest[0]
+    double top[] = {bottom_x, bottom_x + w,
+                    bottom_y + n*w, bottom_y + w,
+                    bottom_z, bottom_z + w
+                   };
+
+    nearest[0] = (int)pointInBoundingBox(vx, vy, vz, bottom[0], bottom[1], 
+                                                     bottom[2], bottom[3],
+                                                     bottom[4], bottom[5]);
+
+    nearest[1] = (int)pointInBoundingBox(vx, vy, vz, left[0], left[1], 
+                                                     left[2], left[3],
+                                                     left[4], left[5]);
+
+    nearest[2] = (int)pointInBoundingBox(vx, vy, vz, front[0], front[1], 
+                                                     front[2], front[3],
+                                                     front[4], front[5]);
+
+    nearest[3] = (int)pointInBoundingBox(vx, vy, vz, right[0], right[1], 
+                                                     right[2], right[3],
+                                                     right[4], right[5]);
+
+    nearest[4] = (int)pointInBoundingBox(vx, vy, vz, back[0], back[1], 
+                                                     back[2], back[3],
+                                                     back[4], back[5]);
+
+    nearest[5] = (int)pointInBoundingBox(vx, vy, vz, top[0], top[1], 
+                                                     top[2], top[3],
+                                                     top[4], top[5]);
+    return nearest;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -239,7 +268,7 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
                 std::vector<Vertex>              &allStart,
-                long                             numBasisPts
+                long                             numBasisPts,
                 bool                             doGlobal, 
                 bool                             doLocal, 
                 bool                             doNeighbor 

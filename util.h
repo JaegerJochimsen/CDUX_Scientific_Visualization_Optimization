@@ -137,10 +137,40 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
                 std::vector<Vertex>              &allStart,
-                long                             numBasisPts);
+                long                             numBasisPts,
+                bool                             doGlobal,
+                bool                             doLocal,
+                bool                             doNeighbor);
 
 void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vector<Vertex>> start_basis, double ***bboxes, int domId);
 
+
+/* edgePoint()
+ * 
+ * Description: determine if a point is on the border of its subdomain. 
+ * The distance from the border that is the "cutoff" is determined by the macro 
+ * N.
+ *
+ * Return: true if on edge, false otherwise
+ */
 bool edgePoint(double vx, double vy, double vz);
+
+/* nearestSubdomains()
+ *
+ * Description: determine which edges the point is closest to. Intended to be
+ * used on an edge point.
+ *
+ * Return: an int[] with 1's marked for close faces
+ *
+ * Note:
+ * Face # - Orientation
+ * 0        Bottom
+ * 1        Left
+ * 2        Front
+ * 3        Right
+ * 4        Back
+ * 5        Top
+ */
+int *nearestSubdomains(double vx, double vy, double vz);
 
 #endif /* _UTIL_H_ */

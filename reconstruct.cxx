@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
     // Parse flags for delaunay style (global, local, neighborhood) 
     // ---------------------------------------------------------------//
     bool parallel = false, doGlobal = false, doLocal = false, doNeighbor = false;
-    int opt;
+    int opt, optind;
 
     opterr = 0;
     while((opt = getopt(argc, argv, "pnlg")) != -1){
@@ -107,6 +107,24 @@ int main(int argc, char *argv[]){
         
     // sort into subdomains and establish bboxes
     double ***bboxes = sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts, doGlobal, doLocal, doNeighbor);
+
+    double vx;
+    sscanf(argv[++optind], "%lf", &vx);//= atoi(argv[optind++]);
+    double vy;
+    sscanf(argv[++optind], "%lf", &vy);// = atoi(argv[optind++]);
+    double vz;
+    sscanf(argv[++optind], "%lf", &vz);// = atoi(argv[optind]);
+    int *arr = nearestSubdomains(vx,vy,vz);
+
+    printf("%lf, %d\n", vx, sizeof(vx));
+    printf("%lf, %d\n", vy, sizeof(vy));
+    printf("%lf, %d\n", vz, sizeof(vz));
+
+    for(int i = 0; i < 6; ++i){
+        const char *ending = (i == 5) ? "\n" : " ";
+        std::cout << arr[i] << ending;
+    }
+    if(true) return 0;
 
     // ---------------------------------------------------------------//
     // Start Interp and locate Global
