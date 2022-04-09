@@ -106,7 +106,7 @@ int main(int argc, char *argv[]){
     std::vector<Vertex> all_start_basis;
         
     // sort into subdomains and establish bboxes
-    double ***bboxes = sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts);
+    double ***bboxes = sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts, doGlobal, doLocal, doNeighbor);
 
     // ---------------------------------------------------------------//
     // Start Interp and locate Global

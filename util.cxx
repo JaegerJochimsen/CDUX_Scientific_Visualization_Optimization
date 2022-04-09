@@ -152,12 +152,45 @@ void modifyBoundingBox(double *bbox, double *pt){
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
+bool edgePoint(double vx, double vy, double vz){
+    
+    // get the bottom left vertex
+    double bottom_x = (int)(vx/W)*W;
+    double bottom_y = (int)(vy/W)*W;
+    double bottom_z = (int)(vz/W)*W;
+    
+    double outerbbox[] = { bottom_x, bottom_y, bottom_z,
+                           bottom_x + (double)W, bottom_y + (double)W, bottom_z + (double)W,
+                        };
+
+    double center[] = {bottom_x + (double)(W/2), bottom_y + (double)(W/2), bottom_z + (double)(W/2)};
+
+    double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), center[2] - (double)N*(double)(W/2),
+                          center[0] + (double)N*(double)(W/2), center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
+                        };
+    
+    // if in outer box and not in inner box
+    bool in_outer = pointInBoundingBox(vx,vy,vz,outerbbox[0],outerbbox[3],outerbbox[1], outerbbox[4], outerbbox[2],outerbbox[5]);
+    bool in_inner = pointInBoundingBox(vx,vy,vz,innerbbox[0],innerbbox[3], innerbbox[1], innerbbox[4], innerbbox[2],innerbbox[5]);
+
+    return in_outer && !in_inner;
+}
+
+// FIXME: need to identify what face we are closest too! Do this with more bounding boxes!!
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
 double ***sortInputs(vtkDataSetReader *               inputRdr, 
                 std::vector<std::vector<Vertex>> &startBasis, 
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
                 std::vector<Vertex>              &allStart,
-                long                             numBasisPts)
+                long                             numBasisPts
+                bool                             doGlobal, 
+                bool                             doLocal, 
+                bool                             doNeighbor 
+                )
 {
     // a bounding box per subdomain for start and query points
     // Each of the form: start_bboxes[i] == {blx, bly, blz, tlx, tly, tlz}
@@ -424,30 +457,4 @@ void buildNeighborhood(std::vector<Vertex> &neighborhood, std::vector<std::vecto
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-
-bool edgePoint(double vx, double vy, double vz){
-    
-    // get the bottom left vertex
-    double bottom_x = (int)(vx/W)*W;
-    double bottom_y = (int)(vy/W)*W;
-    double bottom_z = (int)(vz/W)*W;
-    
-    double outerbbox[] = { bottom_x, bottom_y, bottom_z,
-                           bottom_x + (double)W, bottom_y + (double)W, bottom_z + (double)W,
-                        };
-
-    double center[] = {bottom_x + (double)(W/2), bottom_y + (double)(W/2), bottom_z + (double)(W/2)};
-
-    double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), center[2] - (double)N*(double)(W/2),
-                          center[0] + (double)N*(double)(W/2), center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
-                        };
-    
-    // if in outer box and not in inner box
-    bool in_outer = pointInBoundingBox(vx,vy,vz,outerbbox[0],outerbbox[3],outerbbox[1], outerbbox[4], outerbbox[2],outerbbox[5]);
-    bool in_inner = pointInBoundingBox(vx,vy,vz,innerbbox[0],innerbbox[3], innerbbox[1], innerbbox[4], innerbbox[2],innerbbox[5]);
-
-    return in_outer && !in_inner;
-    
-}
-
 
