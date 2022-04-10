@@ -13,9 +13,9 @@ bool pointInBoundingBox(double vx, double vy, double vz, double bxMin,
                         double bxMax, double byMin, double byMax, 
                         double bzMin, double bzMax){
 
-	bool contains = (double)bxMin <= vx && vx <= (double)bxMax &&
-					(double)byMin <= vy && vy <= (double)byMax &&
-					(double)bzMin <= vz && vz <= (double)bzMax;
+	bool contains = (double)bxMin <= vx && vx < (double)bxMax &&
+					(double)byMin <= vy && vy < (double)byMax &&
+					(double)bzMin <= vz && vz < (double)bzMax;
 	return contains;
 }
 
@@ -291,7 +291,6 @@ int *nearestSubdomains(double vx, double vy, double vz){
 
     // top left diag
     if(in_top && in_left) nearest[10] = getDomainIndex(vx - w,vy + w,vz);
-    printf("past 12th\n");
 
     // top right diag
     if(in_top && in_right) nearest[11] = getDomainIndex(vx + w,vy + w,vz);
@@ -364,9 +363,14 @@ void sortInputs(vtkDataSetReader *               inputRdr,
  
         // get subdomain id 
         int subdomain_id = getDomainIndex(start_point[0], start_point[1], start_point[2]);
-        printf("subdomain: %d\n", subdomain_id);
         if(subdomain_id < 0) continue;
-        if(subdomain_id > 63) printf("HERE!\n");
+
+        if(subdomain_id > 63){ 
+            std::cout << subdomain_id << "\n";
+            std::cout << start_point[0] << "," << start_point[1] << "," << start_point[2] << "\n";
+            continue;
+        }
+        
         // Take subset of input pts (of size SUBSET)
         if(subdomain_count < SUBSET){
             // query pts are just the start, their projected end should be the same for this test
@@ -380,14 +384,12 @@ void sortInputs(vtkDataSetReader *               inputRdr,
             }
 
             if(doNeighbor && edgePoint(start_point[0], start_point[1], start_point[2])){ 
-                printf("after edgePoint()\n");
+
                 int *nearest = nearestSubdomains(start_point[0], start_point[1], start_point[2]);
-                printf("after nearest\n");
+
                 for(int k = 0; k < 26; ++k){
 
                     if(nearest[k] == -1) continue; // since we are adding to nearest sequentially, once we see a -1 we're done
-
-                    printf("nearest[%d]=%d\n", k, nearest[k]);
 
                     startBasis[nearest[k]].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
                     //endBasis[nearest[k]].push_back(Vertex(start_point[0], start_point[1], start_point[2]));

@@ -105,8 +105,6 @@ int main(int argc, char *argv[]){
     std::vector<std::vector<Vertex>> subdomain_query_points(64);
     std::vector<Vertex> all_start_basis;
 
-    printf("Before sorting\n");
-        
     // sort into subdomains and establish bboxes
     (void)sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts, doGlobal, doLocal, doNeighbor);
 
@@ -119,9 +117,6 @@ int main(int argc, char *argv[]){
 
     // keep track of locatable query points
     int unfindable = 0;
-
-    Vertex z = Vertex(0.0,0.0,0.0);
-    printf("size of Verex: %ld\n", sizeof(z));
 
     // For Global
     if(doGlobal){
