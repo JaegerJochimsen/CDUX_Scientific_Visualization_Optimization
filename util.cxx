@@ -64,8 +64,7 @@ std::vector<int> neighborDoms(Vertex v){
     neighborDomains[22] = getDomainIndex(v.x() -W, v.y() +W, v.z() -W);
     neighborDomains[23] = getDomainIndex(v.x() -W, v.y() -W, v.z());
     neighborDomains[24] = getDomainIndex(v.x() -W, v.y() -W, v.z() +W);
-    neighborDomains[25] = getDomainIndex(v.x() -W, v.y() -W, v.z() -W);
-
+    neighborDomains[25] = getDomainIndex(v.x() -W, v.y() -W, v.z() -W); 
     return neighborDomains;
 }
 
@@ -181,6 +180,7 @@ bool edgePoint(double vx, double vy, double vz){
 
 int *nearestSubdomains(double vx, double vy, double vz){
     int *nearest = (int *)calloc((size_t)26, sizeof(int));
+    for(int i = 0; i < 26; ++i) nearest[i] = -1;
     
     // Here we will define a new convention for face naming
     // These will be used to fill values for bounding boxes (1 per face)
@@ -234,36 +234,118 @@ int *nearestSubdomains(double vx, double vy, double vz){
                     bottom_z, bottom_z + w
                    };
 
-    nearest[0] = (int)pointInBoundingBox(vx, vy, vz, bottom[0], bottom[1], 
-                                                     bottom[2], bottom[3],
-                                                     bottom[4], bottom[5]);
+    int in_bottom = (int)pointInBoundingBox(vx, vy, vz, bottom[0], bottom[1], 
+                                           bottom[2], bottom[3],
+                                           bottom[4], bottom[5]);
 
-    nearest[1] = (int)pointInBoundingBox(vx, vy, vz, left[0], left[1], 
-                                                     left[2], left[3],
-                                                     left[4], left[5]);
+    int in_left = (int)pointInBoundingBox(vx, vy, vz, left[0], left[1], 
+                                           left[2], left[3],
+                                           left[4], left[5]);
 
-    nearest[2] = (int)pointInBoundingBox(vx, vy, vz, front[0], front[1], 
-                                                     front[2], front[3],
-                                                     front[4], front[5]);
+    int in_front = (int)pointInBoundingBox(vx, vy, vz, front[0], front[1], 
+                                           front[2], front[3],
+                                           front[4], front[5]);
 
-    nearest[3] = (int)pointInBoundingBox(vx, vy, vz, right[0], right[1], 
-                                                     right[2], right[3],
-                                                     right[4], right[5]);
+    int in_right = (int)pointInBoundingBox(vx, vy, vz, right[0], right[1], 
+                                           right[2], right[3],
+                                           right[4], right[5]);
 
-    nearest[4] = (int)pointInBoundingBox(vx, vy, vz, back[0], back[1], 
-                                                     back[2], back[3],
-                                                     back[4], back[5]);
+    int in_back = (int)pointInBoundingBox(vx, vy, vz, back[0], back[1], 
+                                           back[2], back[3],
+                                           back[4], back[5]);
 
-    nearest[5] = (int)pointInBoundingBox(vx, vy, vz, top[0], top[1], 
+    int in_top = (int)pointInBoundingBox(vx, vy, vz, top[0], top[1], 
                                                      top[2], top[3],
                                                      top[4], top[5]);
+
+    // bottom face
+    if(in_bottom) nearest[0] = getDomainIndex(vx,vy - w,vz);
+
+    // left face
+    if(in_left) nearest[1] = getDomainIndex(vx - w,vy,vz);
+
+    // front face
+    if(in_front) nearest[2] = getDomainIndex(vx,vy,vz - w);
+
+    // right face
+    if(in_right) nearest[3] = getDomainIndex(vx + w,vy,vz);
+
+    // back face
+    if(in_back) nearest[4] = getDomainIndex(vx,vy,vz + w);
+
+    // top face
+    if(in_top) nearest[5] = getDomainIndex(vx,vy + w,vz);
+
+
+    // bottom left diag
+    if(in_bottom && in_left) nearest[6] = getDomainIndex(vx - w, vy - w, vz);
+
+    // bottom right diag
+    if(in_bottom && in_right) nearest[7] = getDomainIndex(vx + w,vy - w,vz);
+
+    // bottom front diag
+    if(in_bottom && in_front) nearest[8] = getDomainIndex(vx,vy - w,vz - w);
+
+    // bottom back diag
+    if(in_bottom && in_back) nearest[9] = getDomainIndex(vx,vy - w,vz + w);
+
+    // top left diag
+    if(in_top && in_left) nearest[10] = getDomainIndex(vx - w,vy + w,vz);
+    printf("past 12th\n");
+
+    // top right diag
+    if(in_top && in_right) nearest[11] = getDomainIndex(vx + w,vy + w,vz);
+
+    // top front diag
+    if(in_top && in_front) nearest[12] = getDomainIndex(vx,vy + w,vz - w);
+
+    // top back diag
+    if(in_top && in_back) nearest[13] = getDomainIndex(vx,vy + w,vz + w);
+
+    // left back diag
+    if(in_left && in_back) nearest[14] = getDomainIndex(vx - w, vy, vz + w);
+
+    // left front diag
+    if(in_left && in_front) nearest[15] = getDomainIndex(vx - w, vy, vz - w);
+
+    // right back diag
+    if(in_right && in_back) nearest[16] = getDomainIndex(vx + w, vy, vz - w);
+
+    // right front diag
+    if(in_right && in_front) nearest[17] = getDomainIndex(vx + w, vy, vz + w);
+
+
+    // left front top diag
+    if(in_left && in_front && in_top) nearest[18] = getDomainIndex(vx - w, vy + w, vz - w);
+
+    // left back top diag
+    if(in_left && in_back && in_top) nearest[19] = getDomainIndex(vx - w, vy + w, vz + w);
+
+    // left back bottom diag
+    if(in_left && in_back && in_bottom) nearest[20] = getDomainIndex(vx - w, vy - w, vz + w);
+
+    // left front bottom diag
+    if(in_left && in_front && in_bottom) nearest[21] = getDomainIndex(vx - w, vy - w, vz - w);
+    
+    // right front top diag
+    if(in_right && in_front && in_top) nearest[22] = getDomainIndex(vx + w, vy + w, vz - w);
+
+    // right back top diag
+    if(in_right && in_back && in_top) nearest[23] = getDomainIndex(vx + w, vy + w, vz + w);
+
+    // right back bottom diag
+    if(in_right && in_back && in_bottom) nearest[24] = getDomainIndex(vx + w, vy - w, vz + w);
+
+    // right front bottom diag
+    if(in_right && in_front && in_bottom) nearest[25] = getDomainIndex(vx + w, vy - w, vz - w);
+
     return nearest;
 }
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-double ***sortInputs(vtkDataSetReader *               inputRdr, 
+void sortInputs(vtkDataSetReader *               inputRdr, 
                 std::vector<std::vector<Vertex>> &startBasis, 
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
@@ -274,32 +356,6 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
                 bool                             doNeighbor 
                 )
 {
-    // a bounding box per subdomain for start and query points
-    // Each of the form: start_bboxes[i] == {blx, bly, blz, tlx, tly, tlz}
-    double **start_bboxes = (double **)malloc(sizeof(double *)*64);
-    for(int j = 0; j < 64; ++j){
-        start_bboxes[j] = (double *)malloc(sizeof(double)*6);
-        start_bboxes[j][0] = 100.0;
-        start_bboxes[j][1] = 100.0;
-        start_bboxes[j][2] = 100.0;
-        start_bboxes[j][3] = -1.0;
-        start_bboxes[j][4] = -1.0;
-        start_bboxes[j][5] = -1.0;
-    }
-
-    double **query_bboxes = (double **)malloc(sizeof(double *)*64);
-    for(int j = 0; j < 64; ++j){
-        query_bboxes[j] = (double *)malloc(sizeof(double)*6);
-        query_bboxes[j][0] = 100.0;
-        query_bboxes[j][1] = 100.0;
-        query_bboxes[j][2] = 100.0;
-        query_bboxes[j][3] = -1.0;
-        query_bboxes[j][4] = -1.0;
-        query_bboxes[j][5] = -1.0;
-    }
-
-    double ***bboxes = (double ***)malloc(sizeof(double **)*2);
-
     int subdomain_count = 0;
     long i = 0;
     for(; i < (long)(numBasisPts/2); ++i){
@@ -308,32 +364,44 @@ double ***sortInputs(vtkDataSetReader *               inputRdr,
  
         // get subdomain id 
         int subdomain_id = getDomainIndex(start_point[0], start_point[1], start_point[2]);
-
-
+        printf("subdomain: %d\n", subdomain_id);
+        if(subdomain_id < 0) continue;
+        if(subdomain_id > 63) printf("HERE!\n");
         // Take subset of input pts (of size SUBSET)
         if(subdomain_count < SUBSET){
-            // modify query bounding box 
-            modifyBoundingBox(query_bboxes[subdomain_id], start_point);
-            
             // query pts are just the start, their projected end should be the same for this test
             queryPts[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
             subdomain_count++;
         }
         else{
-            // modify start bounding box 
-            modifyBoundingBox(start_bboxes[subdomain_id], start_point);
-            
-            // for use in creating global delaunay
-            allStart.push_back(Vertex(start_point[0], start_point[1], start_point[2]));
-            
-            // for use in creating local and neighbor delaunays
-            startBasis[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
-            endBasis[subdomain_id].push_back(Vertex(end_point[0], end_point[1], end_point[2]));
+            if(doLocal || doNeighbor){
+                startBasis[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+                //endBasis[subdomain_id].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+            }
+
+            if(doNeighbor && edgePoint(start_point[0], start_point[1], start_point[2])){ 
+                printf("after edgePoint()\n");
+                int *nearest = nearestSubdomains(start_point[0], start_point[1], start_point[2]);
+                printf("after nearest\n");
+                for(int k = 0; k < 26; ++k){
+
+                    if(nearest[k] == -1) continue; // since we are adding to nearest sequentially, once we see a -1 we're done
+
+                    printf("nearest[%d]=%d\n", k, nearest[k]);
+
+                    startBasis[nearest[k]].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+                    //endBasis[nearest[k]].push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+                }
+                free(nearest);
+            }
+  
+            if(doGlobal){
+                // for use in creating global delaunay
+                allStart.push_back(Vertex(start_point[0], start_point[1], start_point[2]));
+            }
         }
     }
-    bboxes[0] = start_bboxes;
-    bboxes[1] = query_bboxes;
-    return bboxes;
+    return;
 }
 
 /////////////////////////////////////////////////////////////////////////

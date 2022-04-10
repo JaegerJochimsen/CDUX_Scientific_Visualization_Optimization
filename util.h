@@ -24,7 +24,7 @@
 #define BXMax 10.0
 #define BYMax 10.0
 #define BZMax 10.0
-#define N 0.95
+#define N 0.9
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Triangulation_vertex_base_with_info_3<unsigned int, K> Vb; 
@@ -129,10 +129,10 @@ void modifyBoundingBox(double **bbox, double *pt);
  *              place them in the correct vector (which corresponds to 
  *              the subdomain they are located in)
  *
- * Return: bounding box for start verts
+ * Return: none
  * Side Effect: fills passed in vectors
  */
-double ***sortInputs(vtkDataSetReader *               inputRdr, 
+void sortInputs(vtkDataSetReader *               inputRdr, 
                 std::vector<std::vector<Vertex>> &startBasis, 
                 std::vector<std::vector<Vertex>> &endBasis,
                 std::vector<std::vector<Vertex>> &queryPts,
@@ -160,16 +160,8 @@ bool edgePoint(double vx, double vy, double vz);
  * Description: determine which edges the point is closest to. Intended to be
  * used on an edge point.
  *
- * Return: an int[] with 1's marked for close faces
+ * Return: an int[] with ids for the nearest subdomains
  *
- * Note:
- * Face # - Orientation
- * 0        Bottom
- * 1        Left
- * 2        Front
- * 3        Right
- * 4        Back
- * 5        Top
  */
 int *nearestSubdomains(double vx, double vy, double vz);
 

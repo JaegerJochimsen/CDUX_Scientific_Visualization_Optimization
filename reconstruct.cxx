@@ -104,27 +104,11 @@ int main(int argc, char *argv[]){
     std::vector<std::vector<Vertex>> subdomain_end_basis(64);
     std::vector<std::vector<Vertex>> subdomain_query_points(64);
     std::vector<Vertex> all_start_basis;
+
+    printf("Before sorting\n");
         
     // sort into subdomains and establish bboxes
-    double ***bboxes = sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts, doGlobal, doLocal, doNeighbor);
-
-    double vx;
-    sscanf(argv[++optind], "%lf", &vx);//= atoi(argv[optind++]);
-    double vy;
-    sscanf(argv[++optind], "%lf", &vy);// = atoi(argv[optind++]);
-    double vz;
-    sscanf(argv[++optind], "%lf", &vz);// = atoi(argv[optind]);
-    int *arr = nearestSubdomains(vx,vy,vz);
-
-    printf("%lf, %d\n", vx, sizeof(vx));
-    printf("%lf, %d\n", vy, sizeof(vy));
-    printf("%lf, %d\n", vz, sizeof(vz));
-
-    for(int i = 0; i < 6; ++i){
-        const char *ending = (i == 5) ? "\n" : " ";
-        std::cout << arr[i] << ending;
-    }
-    if(true) return 0;
+    (void)sortInputs(inputRdr, subdomain_start_basis, subdomain_end_basis, subdomain_query_points, all_start_basis, numBasisPts, doGlobal, doLocal, doNeighbor);
 
     // ---------------------------------------------------------------//
     // Start Interp and locate Global
@@ -135,7 +119,10 @@ int main(int argc, char *argv[]){
 
     // keep track of locatable query points
     int unfindable = 0;
-    
+
+    Vertex z = Vertex(0.0,0.0,0.0);
+    printf("size of Verex: %ld\n", sizeof(z));
+
     // For Global
     if(doGlobal){
 
@@ -211,10 +198,10 @@ int main(int argc, char *argv[]){
                 int index2 = vectorIndex(subdomain_start_basis[domId], s2);
                 int index3 = vectorIndex(subdomain_start_basis[domId], s3);
                 
-                Vertex ev0 = subdomain_end_basis[domId][index0]; 
-                Vertex ev1 = subdomain_end_basis[domId][index1]; 
-                Vertex ev2 = subdomain_end_basis[domId][index2]; 
-                Vertex ev3 = subdomain_end_basis[domId][index3]; 
+                Vertex ev0 = subdomain_start_basis[domId][index0]; 
+                Vertex ev1 = subdomain_start_basis[domId][index1]; 
+                Vertex ev2 = subdomain_start_basis[domId][index2]; 
+                Vertex ev3 = subdomain_start_basis[domId][index3]; 
 
                 // declare end point for query point
                 double *interpEnd = new double[3];
@@ -293,54 +280,53 @@ int main(int argc, char *argv[]){
             Triangulation currentTriangulation;
 
             // create cgal delaunay over current subdomain start verts only
-            if(doLocal){
-                // Start triangulation timer
-                start = std::chrono::high_resolution_clock::now();
+            // Start triangulation timer
+            start = std::chrono::high_resolution_clock::now();
 
-                // load points into triangulation
-                currentTriangulation.insert(subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
+            // load points into triangulation
+            currentTriangulation.insert(subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
 
-                end = std::chrono::high_resolution_clock::now();
-                tri_time = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-                tri_times.push_back(tri_time.count());
-                // End triangulation timer
-            }
+            end = std::chrono::high_resolution_clock::now();
+            tri_time = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+            tri_times.push_back(tri_time.count());
+            // End triangulation timer
+            
             // create cgal delaunay over current subdomain and neighbor domains
-            else if(doNeighbor){
+           // else if(doNeighbor){
 
-                // hold neighbors
-                std::vector<Vertex> neighborhood;
-                buildNeighborhood(neighborhood, subdomain_start_basis, bboxes, domId);
-                //if(true) return 0;
-                //
-                //// add the central subdomain
-                //neighborhood.insert(neighborhood.begin(), subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
+           //     // hold neighbors
+           //     std::vector<Vertex> neighborhood;
+           //     buildNeighborhood(neighborhood, subdomain_start_basis, bboxes, domId);
+           //     //if(true) return 0;
+           //     //
+           //     //// add the central subdomain
+           //     //neighborhood.insert(neighborhood.begin(), subdomain_start_basis[domId].begin(), subdomain_start_basis[domId].end());
 
-                //// grab all IDs for neighbor domains
-                //std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[domId][0]);
+           //     //// grab all IDs for neighbor domains
+           //     //std::vector<int> neighborhoodIDs = neighborDoms(subdomain_start_basis[domId][0]);
 
-                //// add the neighboring subdomains
-                ////int count = 0;
-                //for(int i = 0; i < neighborhoodIDs.size(); ++i){
+           //     //// add the neighboring subdomains
+           //     ////int count = 0;
+           //     //for(int i = 0; i < neighborhoodIDs.size(); ++i){
 
-                //    int id = neighborhoodIDs[i];
-                //    
-                //    if(id != -1 && subdomain_start_basis[id].size() != 0){
-                //            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
-                //    }
-                //}
+           //     //    int id = neighborhoodIDs[i];
+           //     //    
+           //     //    if(id != -1 && subdomain_start_basis[id].size() != 0){
+           //     //            neighborhood.insert(neighborhood.begin(), subdomain_start_basis[id].begin(), subdomain_start_basis[id].end());
+           //     //    }
+           //     //}
 
-                // Start triang timer
-                start = std::chrono::high_resolution_clock::now();
-                
-                // delaunay over neighborhood
-                currentTriangulation.insert(neighborhood.begin(), neighborhood.end());
+           //     // Start triang timer
+           //     start = std::chrono::high_resolution_clock::now();
+           //     
+           //     // delaunay over neighborhood
+           //     currentTriangulation.insert(neighborhood.begin(), neighborhood.end());
 
-                end = std::chrono::high_resolution_clock::now();
-                tri_time = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-                tri_times.push_back(tri_time.count());
-                // End triang timer
-            }
+           //     end = std::chrono::high_resolution_clock::now();
+           //     tri_time = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+           //     tri_times.push_back(tri_time.count());
+           //     // End triang timer
+           // }
 
             // check validity of triangulation
             if(!currentTriangulation.is_valid()){
@@ -390,10 +376,10 @@ int main(int argc, char *argv[]){
                 int index3 = vectorIndex(subdomain_start_basis[domId], s3);
                 
                 // now get end vertices
-                Vertex ev0 = subdomain_end_basis[domId][index0]; 
-                Vertex ev1 = subdomain_end_basis[domId][index1]; 
-                Vertex ev2 = subdomain_end_basis[domId][index2]; 
-                Vertex ev3 = subdomain_end_basis[domId][index3]; 
+                Vertex ev0 = subdomain_start_basis[domId][index0]; 
+                Vertex ev1 = subdomain_start_basis[domId][index1]; 
+                Vertex ev2 = subdomain_start_basis[domId][index2]; 
+                Vertex ev3 = subdomain_start_basis[domId][index3]; 
 
                 // declare end point for query point
                 double *interpEnd = new double[3];
@@ -569,14 +555,6 @@ int main(int argc, char *argv[]){
     // clean up vtk memory
     inputRdr->Delete();
 
-    for(int i = 0; i < 64; free(bboxes[0][i++]));
-    free(bboxes[0]);
-
-    for(int i = 0; i < 64; free(bboxes[1][i++]));
-    free(bboxes[1]);
-
-    free(bboxes);
-    
     return 0;
 }
 
