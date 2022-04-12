@@ -6,8 +6,8 @@ with open("Groundtruth_0_0.vtk", 'w') as f:
     f.write('vtk output\n')
     f.write('ASCII\n')
     f.write('DATASET UNSTRUCTURED_GRID\n')
-    f.write('POINTS 1000000 double\n')
-    for i in range(500000):
+    f.write('POINTS 2000000 double\n')
+    for i in range(1000000):
         x = round(random.uniform(0.0, 10.0),5)
         y = round(random.uniform(0.0, 10.0),5)
         z = round(random.uniform(0.0, 10.0),5)

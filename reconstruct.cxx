@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
 
     int numBasisPts = inputRdr->GetOutput()->GetNumberOfPoints();
     int numQueryPts = numBasisPts / 2;
-    std::cout << "Number of Basis Flows: " << numBasisPts/2 << "\n";
+    std::cout << "Number of Basis Flows: " << numBasisPts/2 - SUBSET << "\n";
     
     // determined by macro
     std::cout << "Number of Query Pts: " << SUBSET << "\n";
