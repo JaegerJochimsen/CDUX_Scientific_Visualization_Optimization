@@ -25,7 +25,8 @@ bool pointInBoundingBox(double vx, double vy, double vz, double bxMin,
 int getDomainIndex(double x, double y, double z){
 	if(!pointInBoundingBox(x,y,z,BXMin, BXMax, BYMin, BYMax, BZMin, BZMax)) 
         return -1;
-    return (int)(x/W) + (int)(y/W)*16 + (int)(z/W)*4;
+	int num_width = (int)(BXMin/W);
+    return (int)(x/W) + (int)(y/W)*num_width*num_width + (int)(z/W)*num_width;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -205,18 +206,18 @@ int *nearestSubdomains(double vx, double vy, double vz){
     // Define bounding boxes. 
     // Ordered coord0, coordmax0, ...                  
     double bottom[] = {bottom_x, bottom_x + w,         
-                       bottom_y, bottom_y + comp_n*w,  
+                       bottom_y, bottom_y + comp_n*(w/2),  
                        bottom_z, bottom_z + w
                       };     
 
-    double left[] = {bottom_x, bottom_x + comp_n*w,
+    double left[] = {bottom_x, bottom_x + comp_n*(w/2),
                      bottom_y, bottom_y + w,
                      bottom_z, bottom_z + w
                     };
 
     double front[] = {bottom_x, bottom_x + w,
                       bottom_y, bottom_y + w,
-                      bottom_z, bottom_z + comp_n*w
+                      bottom_z, bottom_z + comp_n*(w/2)
                      };
 
     double right[] = {bottom_x + n*w, bottom_x + w,
@@ -364,12 +365,6 @@ void sortInputs(vtkDataSetReader *               inputRdr,
         // get subdomain id 
         int subdomain_id = getDomainIndex(start_point[0], start_point[1], start_point[2]);
         if(subdomain_id < 0) continue;
-
-        if(subdomain_id > 63){ 
-            std::cout << subdomain_id << "\n";
-            std::cout << start_point[0] << "," << start_point[1] << "," << start_point[2] << "\n";
-            continue;
-        }
         
         // Take subset of input pts (of size SUBSET)
         if(subdomain_count < SUBSET){

@@ -17,14 +17,14 @@
 #include <vtkTetra.h>
 
 #define SUBSET 10000
-#define W 2.5
+#define W (2.5)
 #define BXMin 0.0
 #define BYMin 0.0
 #define BZMin 0.0
 #define BXMax 10.0
 #define BYMax 10.0
 #define BZMax 10.0
-#define N 0.94
+#define N 0.999
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Triangulation_vertex_base_with_info_3<unsigned int, K> Vb; 
