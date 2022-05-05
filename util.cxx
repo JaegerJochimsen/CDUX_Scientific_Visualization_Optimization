@@ -202,36 +202,43 @@ int *nearestSubdomains(double vx, double vy, double vz){
     double bottom_x = (int)(vx/W)*W;
     double bottom_y = (int)(vy/W)*W;
     double bottom_z = (int)(vz/W)*W;
+
+    double center[] = {bottom_x + (double)(W/2), bottom_y + (double)(W/2), bottom_z + (double)(W/2)};
+
+    // order = {x0,y0,z0,x1,y1,z1}
+    double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), 
+                          center[2] - (double)N*(double)(W/2), center[0] + (double)N*(double)(W/2), 
+                          center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
     
     // Define bounding boxes. 
     // Ordered coord0, coordmax0, ...                  
     double bottom[] = {bottom_x, bottom_x + w,         
-                       bottom_y, bottom_y + comp_n*(w/2),  
+                       bottom_y, innerbbox[1],  
                        bottom_z, bottom_z + w
                       };     
 
-    double left[] = {bottom_x, bottom_x + comp_n*(w/2),
+    double left[] = {bottom_x, innerbbox[0],
                      bottom_y, bottom_y + w,
                      bottom_z, bottom_z + w
                     };
 
     double front[] = {bottom_x, bottom_x + w,
                       bottom_y, bottom_y + w,
-                      bottom_z, bottom_z + comp_n*(w/2)
+                      bottom_z, innerbbox[2]
                      };
 
-    double right[] = {bottom_x + n*w, bottom_x + w,
+    double right[] = {innerbbox[3], bottom_x + w,
                       bottom_y, bottom_y + w,
                       bottom_z, bottom_z + w
                      };
 
     double back[] = {bottom_x, bottom_x + w,
                      bottom_y, bottom_y + w,
-                     bottom_z + n*w, bottom_z + w 
+                     innerbbox[5], bottom_z + w 
                     };
 
     double top[] = {bottom_x, bottom_x + w,
-                    bottom_y + n*w, bottom_y + w,
+                    innerbbox[4], bottom_y + w,
                     bottom_z, bottom_z + w
                    };
 
