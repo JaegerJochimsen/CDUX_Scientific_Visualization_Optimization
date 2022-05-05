@@ -209,6 +209,7 @@ int *nearestSubdomains(double vx, double vy, double vz){
     double innerbbox[] = {center[0] - (double)N*(double)(W/2), center[1] - (double)N*(double)(W/2), 
                           center[2] - (double)N*(double)(W/2), center[0] + (double)N*(double)(W/2), 
                           center[1] + (double)N*(double)(W/2), center[2] + (double)N*(double)(W/2), 
+						 };
     
     // Define bounding boxes. 
     // Ordered coord0, coordmax0, ...                  
