@@ -25,7 +25,7 @@ bool pointInBoundingBox(double vx, double vy, double vz, double bxMin,
 int getDomainIndex(double x, double y, double z){
 	if(!pointInBoundingBox(x,y,z,BXMin, BXMax, BYMin, BYMax, BZMin, BZMax)) 
         return -1;
-	int num_width = (int)(BXMin/W);
+	int num_width = (int)(BXMax/W);
     return (int)(x/W) + (int)(y/W)*num_width*num_width + (int)(z/W)*num_width;
 }
 
@@ -367,6 +367,7 @@ void sortInputs(vtkDataSetReader *               inputRdr,
 {
     int subdomain_count = 0;
     long i = 0;
+	long total_neighbor_points = 0, total_global_points = 0;
     for(; i < (long)(numBasisPts/2); ++i){
         double *start_point = inputRdr->GetOutput()->GetPoint(2*i);
         double *end_point = inputRdr->GetOutput()->GetPoint(2*i + 1);
@@ -390,7 +391,6 @@ void sortInputs(vtkDataSetReader *               inputRdr,
             if(doNeighbor && edgePoint(start_point[0], start_point[1], start_point[2])){ 
 
                 int *nearest = nearestSubdomains(start_point[0], start_point[1], start_point[2]);
-
                 for(int k = 0; k < 26; ++k){
 
                     if(nearest[k] == -1) continue; // since we are adding to nearest sequentially, once we see a -1 we're done
@@ -407,6 +407,13 @@ void sortInputs(vtkDataSetReader *               inputRdr,
             }
         }
     }
+	for(int i = 0; i < startBasis.size(); ++i){
+		total_neighbor_points += startBasis[i].size();
+	}
+
+	if(doGlobal) printf("total global points: %ld\n", allStart.size());
+	else printf("total neighbor points: %ld\n", total_neighbor_points);
+
     return;
 }
 
