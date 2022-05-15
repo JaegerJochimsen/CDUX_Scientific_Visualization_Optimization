@@ -16,9 +16,9 @@
 #include <vtkDataSetReader.h>
 #include <vtkTetra.h>
 
-#define SUBSET 10000
-#define NUM_SUBDOMAINS 1000
-#define W (1)
+#define SUBSET 100
+#define NUM_SUBDOMAINS 64
+#define W (2.5)
 #define BXMin 0.0
 #define BYMin 0.0
 #define BZMin 0.0
